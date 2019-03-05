@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"io"
+	"io/ioutil"
 	"net/http"
 	"os"
 
@@ -15,6 +16,7 @@ func main() {
 	//r.HandleFunc("/products/{id}", ProductsHandler)
 	s := r.PathPrefix("/news").Subrouter()
 	// "news/"
+
 	s.HandleFunc("/", NewsHandler)
 	// "/products/{key}/"
 	s.HandleFunc("/{id}/", NewsHandler)
@@ -38,12 +40,21 @@ func NewsHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	fmt.Fprintf(w, "Category: Product wit id  %v %v %v \n", ids, vars["category"], endpoint)
 }
-func NewsHealthHandler(w http.ResponseWriter, r *http.Request) {
-	//vars := mux.Vars(r)
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
 
-	// In the future we could report back on the status of our DB, or our cache
-	// (e.g. Redis) by performing a simple PING, and include them in the response.
-	io.WriteString(w, `{"alive": true}`)
-}
+func NewsHealthHandler(w http.ResponseWriter, r *http.Request) {
+	// Get calling endpoint
+	endpoint := os.Getenv("ENDPOINT")
+	callback := fmt.Sprintf("%v%v", endpoint, r.RequestURI)
+
+	response, err := http.Get(callback)
+	if err != nil {
+		fmt.Printf("The HTTP request failed with error %s\n", err)
+	} else {
+		data, _ := ioutil.ReadAll(response.Body)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		fmt.Println(string(data))
+		io.WriteString(w, string(data))
+	}
+
+}/*  */
